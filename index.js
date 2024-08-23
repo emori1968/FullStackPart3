@@ -1,7 +1,14 @@
 const express = require('express')
 const app = express()
-
 app.use(express.json())
+
+// HTTP request logger middleware for node.js 
+var morgan = require('morgan')
+app.use(morgan('tiny'))
+
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: 'Wop! unknown endpoint' })
+}
 
 let persons =
 [
@@ -54,6 +61,8 @@ app.get('/api/persons/:id', (request, response) => {
     } else {
       response.status(404).end()
     }
+    // console.log("request.params: ", request.params)
+    // console.log("request.body: ", request.body)
   })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -97,9 +106,11 @@ app.post('/api/persons', (request, response) => {
 
     persons = persons.concat(person)
     response.json(person)
-    console.log("Added to person list", body.name)
+    console.log("request.params: ", request.params)
+    console.log("request.body: ", request.body)
   })
 
+app.use(unknownEndpoint)
 
 const PORT = 3001
 app.listen(PORT, () => {
