@@ -4,42 +4,14 @@ const express = require('express')
 const app = express()
 app.use(express.json())
 
+//necesary to conect to different sources
 const cors = require('cors')
 app.use(cors())
 
-// Mongo Atlas with mongoose interface
-const mongoose = require('mongoose')
+// Importing Public object (MongoDB)
+const Person = require('./models/person')
 
-const url = process.env.MONGODB_URI
-
-console.log('connecting to', url)
-
-mongoose.connect(url)
-  .then(result => {
-    console.log('connected to MongoDB')
-  })
-  .catch(error => {
-    console.log('error connecting to MongoDB:', error.message)
-  })
-
-const personSchema = new mongoose.Schema({
-  name: String,
-  number: String,
-})
-
-// Borrar _id _v introducido por MongoDB y dejar solo id
-personSchema.set('toJSON', {
-  transform: (document, returnedObject) => {
-    returnedObject.id = returnedObject._id.toString()
-    delete returnedObject._id
-    delete returnedObject.__v
-  }
-})
-
-const Person = mongoose.model('Person', personSchema)
-
-
-// Permite correr el frontend desde el backend
+// Run front end from the root of the page
 // dist es el directorio que contiene el frontend minimizado con el "build" de Vite en este caso
 app.use(express.static('dist'))
 
@@ -51,7 +23,7 @@ const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'Wop! unknown endpoint' })
 }
 
-app.get('/', (request, response) => {
+app.get('/info', (request, response) => {
   response.send('<p>Helsinki Fullstack Course Part3</p>')
 })
 
@@ -63,9 +35,31 @@ app.get('/api/persons', (request, response) => {
   })
 })
 
+app.post('/api/persons', (request, response) => {
+  const body = request.body
+
+  if (body.name === undefined) {
+    return response.status(400).json({ error: 'name missing' })
+  }
+
+  const person = new Person({
+    name: body.name,
+    number: body.number,
+  })
+
+  person.save().then(savedPerson => {
+    response.json(savedPerson)
+  })
+})
+
+app.get('/api/persons/:id', (request, response) => {
+  Person.findById(request.params.id).then(person => {
+    response.json(person)
+  })
+})
 
 
-/* No implemented for this excersice
+/* Old code were person was declared as an local array
 
 app.get('/info', (request, response) => {
   const d = new Date()
@@ -74,8 +68,6 @@ app.get('/info', (request, response) => {
   response.send(`<p>Phonebookhas info for ${len} people</p>${date}`)
   console.log("Sending date:",date)
 })
-
-
 
 app.get('/api/persons/:id', (request, response) => {
     const id = request.params.id
