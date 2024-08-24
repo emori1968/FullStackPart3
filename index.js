@@ -1,3 +1,5 @@
+
+require('dotenv').config()
 const express = require('express')
 const app = express()
 app.use(express.json())
@@ -5,44 +7,65 @@ app.use(express.json())
 const cors = require('cors')
 app.use(cors())
 
+// Mongo Atlas with mongoose interface
+const mongoose = require('mongoose')
+
+const url = process.env.MONGODB_URI
+
+console.log('connecting to', url)
+
+mongoose.connect(url)
+  .then(result => {
+    console.log('connected to MongoDB')
+  })
+  .catch(error => {
+    console.log('error connecting to MongoDB:', error.message)
+  })
+
+const personSchema = new mongoose.Schema({
+  name: String,
+  number: String,
+})
+
+// Borrar _id _v introducido por MongoDB y dejar solo id
+personSchema.set('toJSON', {
+  transform: (document, returnedObject) => {
+    returnedObject.id = returnedObject._id.toString()
+    delete returnedObject._id
+    delete returnedObject.__v
+  }
+})
+
+const Person = mongoose.model('Person', personSchema)
+
+
+// Permite correr el frontend desde el backend
+// dist es el directorio que contiene el frontend minimizado con el "build" de Vite en este caso
 app.use(express.static('dist'))
 
 // HTTP request logger middleware for node.js 
 var morgan = require('morgan')
 app.use(morgan('tiny'))
 
-
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'Wop! unknown endpoint' })
 }
 
-let persons =
-[
-  { 
-    "id": "1",
-    "name": "Arto Hellas", 
-    "number": "040-123456"
-  },
-  { 
-    "id": "2",
-    "name": "Ada Lovelace", 
-    "number": "39-44-5323523"
-  },
-  { 
-    "id": "3",
-    "name": "Dan Abramov", 
-    "number": "12-43-234345"
-  },
-  { 
-    "id": "4",
-    "name": "Mary Poppendieck", 
-    "number": "39-23-6423122"
-  }
-]
-
 app.get('/', (request, response) => {
   response.send('<p>Helsinki Fullstack Course Part3</p>')
 })
+
+//fetching all persons from Mongo Atlas database
+app.get('/api/persons', (request, response) => {
+  Person.find({}).then(persons => {
+    response.json(persons)
+
+  })
+})
+
+
+
+/* No implemented for this excersice
 
 app.get('/info', (request, response) => {
   const d = new Date()
@@ -52,9 +75,7 @@ app.get('/info', (request, response) => {
   console.log("Sending date:",date)
 })
 
-app.get('/api/persons', (request, response) => {
-  response.json(persons)
-})
+
 
 app.get('/api/persons/:id', (request, response) => {
     const id = request.params.id
@@ -110,9 +131,11 @@ app.post('/api/persons', (request, response) => {
     console.log(request.body)
 })
 
+*/
+
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
