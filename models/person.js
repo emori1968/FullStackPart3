@@ -3,10 +3,9 @@ const mongoose = require('mongoose')
 
 const url = process.env.MONGODB_URI
 
-console.log('connecting to', url)
-
+console.log('connecting to mongodb+srv://emori1968:api_keyxxx@cluster0.it4ey.mongodb.net/personApp?retryWrites=true&w=majority&appName=Cluster0')
 mongoose.connect(url)
-  .then(result => {
+  .then(() => {
     console.log('connected to MongoDB')
   })
   .catch(error => {
@@ -14,7 +13,11 @@ mongoose.connect(url)
   })
 
 const personSchema = new mongoose.Schema({
-  name: String,
+  name: {
+    type: String,
+    minLength: 3,
+    required: true
+  },
   number: String,
 })
 
@@ -27,7 +30,8 @@ personSchema.set('toJSON', {
   }
 })
 
+// Create a mongoose model "Person"
 const Person = mongoose.model('Person', personSchema)
 
-// export only public obeject 'Person'
+// export only public object 'Person'
 module.exports = mongoose.model('Person', personSchema)
